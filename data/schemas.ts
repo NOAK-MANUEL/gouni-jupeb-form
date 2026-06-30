@@ -13,7 +13,7 @@ export const personalSchema = z.object({
   maritalStatus: z.enum(["Married","Single"], { message: "Select status" }),
   email:       z.email("Valid email required"),
   phone:       z.string().min(8, "Valid phone required"),
-  nationality: z.string().min(2, "Required"),
+//   nationality: z.string().min(2, "Required"),
   street:      z.string().min(3, "Required"),
   street2:     z.string().optional(),
   city:        z.string().min(1, "Required"),

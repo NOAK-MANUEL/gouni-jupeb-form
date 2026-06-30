@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url = env("DATABASE_URL")
+}
+
+
+model Student{
+        id String @id @default(auto()) @map("_id") @db.ObjectId 
+  first_name String
+  last_name String
+  middle_name String
+  gender String
+  phone_number String @unique 
+  email String @unique
+  marital_status String
+  faculty String
+  subjects String
+  street_address String
+  state_province String
+  state_of_origin String
+  city String
+  postal String?
+  country String
+  dob DateTime
+  lga String
+  hobbies String
+  ref_number String?
+  how_you_found_us String?
+  institutes Student_Institutes[]
+  sponsors Student_Sponsor[]
+}
+
+model Student_Institutes{
+        id String @id @default(auto()) @map("_id") @db.ObjectId
+  student_id String
+  student Student @relation(fields: [student_id], references: [phone_number])
+  school_name String
+  city String
+  date_from DateTime
+  date_to DateTime
+  certificate String
+}
+ model Student_Sponsor{
+    id String @id @default(auto()) @map("_id") @db.ObjectId
+  student_id String
+  student Student @relation(fields: [student_id], references: [phone_number])
+  sponsor_name String
+  sponsor_email String
+  sponsor_phone String
+  sponsor_address String
+  relationship String
+ }
+model Admin {
+        id String @id @default(auto()) @map("_id") @db.ObjectId
+  username String @unique
+  email String @unique
+  password String
+  onBlock Boolean @default(false)
+  created_at DateTime @default(now())
+}

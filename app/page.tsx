@@ -1,5 +1,5 @@
 "use client"
-import { useState, } from "react";
+import { useEffect, useState, } from "react";
 
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,10 @@ import { StepHeading } from "@/components/steps/stepHeading";
 import { StepBar } from "@/components/steps/stepBody";
 import { F, Grid, Inp, SectionDivider, Sel } from "@/components/homeComponents/homeComponents";
 import { FullForm, fullSchema } from "@/data/schemas";
+import { countries } from "@/data/countries";
+import { statesLGA } from "@/data/statesLGA";
+import { getStudentData, storeStudentData1 } from "@/actions";
+import { useRouter, useSearchParams } from "next/navigation";
 
 
 
@@ -100,7 +104,10 @@ export default function JUPEBAdmissions() {
   const [step, setStep] = useState<Step>("subjects");
   const [successData, setSuccessData] = useState<{ name:string; id:string } | null>(null);
 
-  const { register, control, handleSubmit, trigger, watch, formState: { errors } } = useForm<FullForm>({
+  const query = useSearchParams()
+
+  const navigate = useRouter()
+  const { register, control, handleSubmit, trigger, watch,getValues, setValues,formState: { errors, } } = useForm<FullForm>({
     resolver: zodResolver(fullSchema),
     mode: "onBlur",
     defaultValues: {
@@ -115,12 +122,56 @@ export default function JUPEBAdmissions() {
 
   const faculty = watch("faculty");
 
+
   const nav = (to: Step) => { window.scrollTo({ top:0, behavior:"smooth" }); setStep(to); };
 
   const tryNext = async (fields: (keyof FullForm)[], to: Step) => {
     const ok = await trigger(fields);
+    if(ok && to==="education") {
+      const data =await storeStudentData1(getValues());
+      if(data.success){
+        
+        return navigate.push(data.message)
+      }else return alert(data.message)
+    } 
     if (ok) nav(to);
   };
+  
+  
+  useEffect(() => {
+    const paid = query.get("paid")
+    const ref_number = query.get("ref-number")
+    if(paid && ref_number){
+       getStudentData(ref_number).then((data)=>{
+        if(data.success){
+          if(!data.data)return;
+      setValues({
+        country: data.data.country,
+        stateOfOrigin: data.data.state_of_origin,
+        lga: data.data.lga,
+        faculty: data.data.faculty,
+        programme: data.data.subjects,
+        firstName: data.data.first_name,
+        lastName: data.data.last_name,
+        otherNames: data.data.middle_name,
+        email: data.data.email,
+        phone: data.data.phone_number,
+        street: data.data.street_address,
+        city: data.data.city,
+        stateProvince: data.data.state_province,
+        postalCode: data.data.postal||"",
+        dobMonth: String(new Date(data.data.dob).getMonth() + 1),
+        dobDay: String(new Date(data.data.dob).getDate()),
+        dobYear: String(new Date(data.data.dob).getFullYear()),
+        hobbies: data.data.hobbies,
+      maritalStatus: data.data.marital_status as "Single" | "Married",
+        gender: data.data.gender as "Male" | "Female", // <-- Fixed
+      });     
+      tryNext(["faculty","programme","firstName","lastName","email","phone","street","city","country","stateOfOrigin","lga","dobMonth","dobDay","dobYear"],"education")
+   }
+      });
+    }
+  },[query,setValues,tryNext])
 
   const onSubmit = (data: FullForm) => {
     const s = saveStudent(data);
@@ -272,9 +323,9 @@ export default function JUPEBAdmissions() {
                   </F>
                 </Grid>
 
-                <F label="Nationality" required>
+                {/* <F label="Nationality" required>
                   <Inp error={errors.nationality?.message} {...register("nationality")} placeholder="e.g. Nigerian" />
-                </F>
+                </F> */}
 
                 <SectionDivider>Contact Address</SectionDivider>
 
@@ -287,16 +338,17 @@ export default function JUPEBAdmissions() {
                   <F label="City" required half>
                     <Inp error={errors.city?.message} {...register("city")} />
                   </F>
-                  <F label="State / Province" half>
-                    <Inp {...register("stateProvince")} />
-                  </F>
+                   <Sel error={errors.stateProvince?.message} {...register("stateProvince")}>
+                      <option value="">— Select State Province —</option>
+                      {Object.keys(statesLGA).map(c => <option key={c}>{c}</option>)}
+                    </Sel>
                   <F label="Postal / Zip Code" half>
                     <Inp {...register("postalCode")} />
                   </F>
                   <F label="Country" required half>
                     <Sel error={errors.country?.message} {...register("country")}>
                       <option value="">— Select Country —</option>
-                      {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+                      {countries.map(c => <option key={c}>{c}</option>)}
                     </Sel>
                   </F>
                 </Grid>
@@ -304,12 +356,15 @@ export default function JUPEBAdmissions() {
                 <SectionDivider>Background</SectionDivider>
 
                 <Grid>
-                  <F label="State of Origin" required half>
-                    <Inp error={errors.stateOfOrigin?.message} {...register("stateOfOrigin")} />
-                  </F>
-                  <F label="L.G.A" required half>
-                    <Inp error={errors.lga?.message} {...register("lga")} />
-                  </F>
+                  <Sel error={errors.stateOfOrigin?.message} {...register("stateOfOrigin")}>
+                      <option value="">— Select State Of Origin —</option>
+                      {Object.keys(statesLGA).map(c => <option value={c} key={c}>{c}</option>)}
+                    </Sel>
+                  <Sel error={errors.lga?.message} {...register("lga")}>
+                      <option value="">— Select LGA —</option>
+                      {( statesLGA[watch("stateOfOrigin")]||[]).map(c => <option value={c} key={c}>{c}</option>)}
+                    </Sel>
+                 
                 </Grid>
 
                 <F label="Date of Birth" required>
@@ -335,7 +390,7 @@ export default function JUPEBAdmissions() {
 
                 <NavRow
                   onBack={() => nav("subjects")}
-                  onNext={() => tryNext(["firstName","lastName","gender","maritalStatus","email","phone","nationality","street","city","country","stateOfOrigin","lga","dobMonth","dobDay","dobYear","hobbies"], "education")}
+                  onNext={() => tryNext(["firstName","lastName","gender","maritalStatus","email","phone","street","city","country","stateOfOrigin","lga","dobMonth","dobDay","dobYear","hobbies"], "education")}
                 />
               </div>
             )}
@@ -471,7 +526,7 @@ export default function JUPEBAdmissions() {
 
         {/* footer */}
         <div style={{ marginTop:"32px", textAlign:"center" }}>
-          <p style={{ fontSize:"12px", color:C.hint, margin:"0 0 4px" }}>© 2024 Godfrey Okoye University · JUPEB Preliminary Programme · Enugu, Nigeria</p>
+          <p style={{ fontSize:"12px", color:C.hint, margin:"0 0 4px" }}>© {new Date().getFullYear()} Godfrey Okoye University · JUPEB Preliminary Programme · Enugu, Nigeria</p>
           <p style={{ fontSize:"11px", color:C.hint, margin:0 }}>Enquiries: <span style={{ color:C.primary, fontWeight:600 }}>jupeb@gouni.edu.ng</span></p>
         </div>
       </main>
