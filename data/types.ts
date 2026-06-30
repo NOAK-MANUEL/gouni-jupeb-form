@@ -5,9 +5,11 @@ export interface Student {
   faculty: string;
   programme: string;
   submittedAt: string;
-  status: "complete" | "incomplete";
+  status: "complete" |"incomplete"| "failed" | "success";
   paid: boolean;
   paymentRef: string;
+  intent?: string;
+  message?: string;
 }
 
 export type Step = "subjects"|"personal"|"education"|"declaration";

@@ -8,19 +8,20 @@ import { Step, Student } from "@/data/types";
 import { C } from "@/data/colors";
 import { StepHeading } from "@/components/steps/stepHeading";
 import { StepBar } from "@/components/steps/stepBody";
-import { F, Grid, Inp, SectionDivider, Sel } from "@/components/homeComponents/homeComponents";
-import { FullForm, fullSchema } from "@/data/schemas";
+import { AddBtn, F, Grid, Inp, SectionDivider, Sel } from "@/components/homeComponents/homeComponents";
+import { FullForm, fullSchema,  } from "@/data/schemas";
 import { countries } from "@/data/countries";
 import { statesLGA } from "@/data/statesLGA";
-import { getStudentData, storeStudentData1 } from "@/actions";
+import { getStudentData, storeStudentData1, storeStudentData2 } from "@/actions";
 import { useRouter, useSearchParams } from "next/navigation";
+import { SuccessScreen } from "@/components/registration/success/page";
+import { FailedScreen } from "@/components/registration/failed/page";
 
 
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS   = Array.from({ length: 31 }, (_, i) => String(i + 1));
 const YEARS  = Array.from({ length: 80 }, (_, i) => String(2010 - i));
-const COUNTRIES = ["Nigeria","Ghana","Cameroon","Benin","Togo","United Kingdom","United States","Canada","Other"];
 
 /* ═══════════════════════════════════════════════════════════════════
    STUDENT STORE (simulated localStorage via module state)
@@ -36,7 +37,7 @@ let _students: Student[] = [
 ];
 
 let _idCounter = 6;
-function saveStudent(data: FullForm): Student {
+function saveStudent(data: FullForm,paid:boolean=false): Student {
   const s: Student = {
     id: `STU-00${_idCounter++}`,
     name: `${data.firstName} ${data.lastName}`,
@@ -44,11 +45,13 @@ function saveStudent(data: FullForm): Student {
     faculty: data.faculty,
     programme: data.programme.split("–")[0].trim(),
     submittedAt: new Date().toISOString().split("T")[0],
-    status: "complete",
-    paid: false,
+    status: "success",
+    paid,
     paymentRef: "",
   };
   _students = [..._students, s];
+ 
+
   return s;
 }
 
@@ -71,38 +74,11 @@ const NavRow = ({ onBack, onNext, nextLabel="Continue", nextDisabled=false }: {
 
 
 
-/* ═══════════════════════════════════════════════════════════════════
-   SUCCESS SCREEN
-═══════════════════════════════════════════════════════════════════ */
-const SuccessScreen = ({ name, id, onNew }: { name:string; id:string; onNew:()=>void }) => (
-  <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", padding:"24px", fontFamily:"'DM Sans', sans-serif" }}>
-    <div style={{ background:"white", border:`1px solid ${C.border}`, borderRadius:"16px", maxWidth:"460px", width:"100%", padding:"48px 40px", textAlign:"center" }}>
-      <div style={{ width:"72px", height:"72px", borderRadius:"50%", background:C.primaryLt, border:`4px solid ${C.primary}`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 24px" }}>
-        <span style={{ fontSize:"28px" }}>✓</span>
-      </div>
-      <p style={{ color:C.primary, fontSize:"11px", fontWeight:800, letterSpacing:"0.2em", textTransform:"uppercase", margin:"0 0 8px" }}>Application Submitted</p>
-      <h2 style={{ fontSize:"26px", fontWeight:700, color:C.slate, margin:"0 0 16px", fontFamily:"'DM Serif Display', Georgia, serif" }}>Thank You, {name}!</h2>
-      <p style={{ fontSize:"14px", color:C.muted, lineHeight:"1.6", margin:"0 0 24px" }}>
-        Your JUPEB application has been successfully received. Please proceed to make your payment at the bursary to complete your admission process.
-      </p>
-      <div style={{ background:C.accentLt, border:`1px solid #F0D0A0`, borderRadius:"10px", padding:"14px 20px", marginBottom:"28px" }}>
-        <p style={{ fontSize:"11px", fontWeight:800, letterSpacing:"0.12em", textTransform:"uppercase", color:C.accent, margin:"0 0 4px" }}>Application Reference</p>
-        <p style={{ fontSize:"20px", fontWeight:800, color:C.primaryDk, margin:0, letterSpacing:"0.05em" }}>{id}</p>
-      </div>
-      <button onClick={onNew} style={{ background:"white", border:`1.5px solid ${C.primary}`, borderRadius:"8px", color:C.primary, padding:"11px 28px", fontSize:"13px", fontWeight:700, cursor:"pointer", letterSpacing:"0.08em", textTransform:"uppercase" }}>
-        New Application
-      </button>
-    </div>
-  </div>
-);
-
-/* ═══════════════════════════════════════════════════════════════════
-   MAIN FORM COMPONENT
-═══════════════════════════════════════════════════════════════════ */
 export default function JUPEBAdmissions() {
-  const [page, setPage] = useState<"form"|"admin"|"success">("form");
+  const [page, setPage] = useState<"form"|"admin"|"success"|"failed">("form");
   const [step, setStep] = useState<Step>("subjects");
-  const [successData, setSuccessData] = useState<{ name:string; id:string } | null>(null);
+  const [successData, setSuccessData] = useState<{ name:string; id:string,intent?:string, message?:string } | null>(null);
+  const [paid,setPaid] = useState(false)
 
   const query = useSearchParams()
 
@@ -111,14 +87,14 @@ export default function JUPEBAdmissions() {
     resolver: zodResolver(fullSchema),
     mode: "onBlur",
     defaultValues: {
-      education: Array(5).fill({}),
-      sponsors: Array(3).fill({}),
+      education: Array(1).fill({}),
+      sponsors: Array(1).fill({}),
       declaration: undefined,
     },
   });
 
-  const { fields: eduFields } = useFieldArray({ control, name: "education" });
-  const { fields: sponsorFields } = useFieldArray({ control, name: "sponsors" });
+  const { fields: eduFields,append:addEdu, } = useFieldArray({ control, name: "education" });
+  const { fields: sponsorFields,append:addSponsor, } = useFieldArray({ control, name: "sponsors" });
 
   const faculty = watch("faculty");
 
@@ -127,7 +103,7 @@ export default function JUPEBAdmissions() {
 
   const tryNext = async (fields: (keyof FullForm)[], to: Step) => {
     const ok = await trigger(fields);
-    if(ok && to==="education") {
+    if(ok && to==="education" && !paid) {
       const data =await storeStudentData1(getValues());
       if(data.success){
         
@@ -142,45 +118,65 @@ export default function JUPEBAdmissions() {
     const paid = query.get("paid")
     const ref_number = query.get("ref-number")
     if(paid && ref_number){
-       getStudentData(ref_number).then((data)=>{
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }, 300,);
+      getStudentData(ref_number).then((data)=>{
         if(data.success){
           if(!data.data)return;
-      setValues({
-        country: data.data.country,
-        stateOfOrigin: data.data.state_of_origin,
-        lga: data.data.lga,
-        faculty: data.data.faculty,
-        programme: data.data.subjects,
-        firstName: data.data.first_name,
-        lastName: data.data.last_name,
-        otherNames: data.data.middle_name,
-        email: data.data.email,
-        phone: data.data.phone_number,
-        street: data.data.street_address,
-        city: data.data.city,
-        stateProvince: data.data.state_province,
-        postalCode: data.data.postal||"",
-        dobMonth: String(new Date(data.data.dob).getMonth() + 1),
-        dobDay: String(new Date(data.data.dob).getDate()),
-        dobYear: String(new Date(data.data.dob).getFullYear()),
-        hobbies: data.data.hobbies,
-      maritalStatus: data.data.marital_status as "Single" | "Married",
-        gender: data.data.gender as "Male" | "Female", // <-- Fixed
-      });     
-      tryNext(["faculty","programme","firstName","lastName","email","phone","street","city","country","stateOfOrigin","lga","dobMonth","dobDay","dobYear"],"education")
-   }
+          setPaid(data.data.paid as boolean) 
+
+          setValues({
+            country: data.data.country,
+            stateOfOrigin: data.data.state_of_origin,
+            lga: data.data.lga,
+            faculty: data.data.faculty,
+            programme: data.data.subjects,
+            firstName: data.data.first_name,
+            lastName: data.data.last_name,
+            otherNames: data.data.middle_name,
+            email: data.data.email,
+            phone: data.data.phone_number,
+            street: data.data.street_address,
+            city: data.data.city,
+            stateProvince: data.data.state_province,
+            postalCode: data.data.postal||"",
+            dobMonth: String(new Date(data.data.dob).getMonth() + 1),
+            dobDay: String(new Date(data.data.dob).getDate()),
+            dobYear: String(new Date(data.data.dob).getFullYear()),
+            hobbies: data.data.hobbies,
+          maritalStatus: data.data.marital_status as "Single" | "Married",
+            gender: data.data.gender as "Male" | "Female", 
+            ref_number
+          });   
+          trigger(["city", "stateProvince", "postalCode","country","phone","dobMonth", "dobDay", "dobYear","firstName","lastName","email","otherNames","gender","maritalStatus","faculty"]).then((ok)=>{
+
+          if (ok) nav("education");
+          })
+   
+        }
       });
     }
-  },[query,setValues,tryNext])
+  },[query,setValues,trigger]);
 
   const onSubmit = (data: FullForm) => {
     const s = saveStudent(data);
-    setSuccessData({ name: data.firstName, id: s.id });
-    setPage("success");
+     storeStudentData2(data).then((res)=>{
+    if(!res.success){
+      s.intent = res.intent
+      s.message = res.message
+      s.status = "failed"
+    }    
+  })
+    setSuccessData({ name: data.firstName, id: s.id, intent: s.intent, message: s.message });
+    setPage(s.status as "success"|"failed");
   };
 
   if (page === "success" && successData) return (
-    <SuccessScreen name={successData.name} id={successData.id} onNew={() => { setPage("form"); setStep("subjects"); }} />
+    <SuccessScreen name={successData.name}  onNew={() => { setPage("form"); setStep("subjects"); }} />
+  );
+  if (page === "failed" && successData) return (
+    <FailedScreen name={successData.name} intent={successData.intent||"custom"} message={successData.message||"something went wrong"} onClick={() => { setPage("form"); setStep("subjects"); }} />
   );
 
   return (
@@ -421,7 +417,9 @@ export default function JUPEBAdmissions() {
                           <td style={{ padding:"6px 8px" }}><Inp {...register(`education.${i}.dateTo`)} placeholder="YYYY" style={{ minWidth:"70px" }} /></td>
                           <td style={{ padding:"6px 8px" }}><Inp {...register(`education.${i}.certificate`)} placeholder="e.g. WAEC" /></td>
                         </tr>
+                     
                       ))}
+                      <AddBtn onAdd={() => addEdu({institution: "", location: "", dateFrom: "", dateTo: "", certificate: ""})} label="Add Institution" />
                     </tbody>
                   </table>
                 </div>
@@ -446,8 +444,10 @@ export default function JUPEBAdmissions() {
                           <td style={{ padding:"6px 8px" }}><Inp {...register(`sponsors.${i}.address`)} placeholder="Address" /></td>
                           <td style={{ padding:"6px 8px" }}><Inp {...register(`sponsors.${i}.phone`)} placeholder="Phone" /></td>
                           <td style={{ padding:"6px 8px" }}><Inp {...register(`sponsors.${i}.email`)} placeholder="Email" /></td>
+
                         </tr>
                       ))}
+                      <AddBtn onAdd={() => addSponsor({name: "", relationship: "", address: "", phone: "", email: ""})} label="Add Sponsor / Guardian" />
                     </tbody>
                   </table>
                 </div>

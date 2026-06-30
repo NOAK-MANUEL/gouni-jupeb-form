@@ -6,13 +6,13 @@ export const subjectSchema = z.object({
 });
 
 export const personalSchema = z.object({
-  firstName:   z.string().min(2, "Required"),
-  lastName:    z.string().min(2, "Required"),
+  firstName:   z.string().min(4, "Required"),
+  lastName:    z.string().min(4, "Required"),
   otherNames:  z.string().optional(),
   gender:      z.enum(["Male","Female"], { message: "Select gender" }),
   maritalStatus: z.enum(["Married","Single"], { message: "Select status" }),
   email:       z.email("Valid email required"),
-  phone:       z.string().min(8, "Valid phone required"),
+  phone:       z.string().min(8, "Valid phone required").max(15, "Valid phone required"),
 //   nationality: z.string().min(2, "Required"),
   street:      z.string().min(3, "Required"),
   street2:     z.string().optional(),
@@ -26,22 +26,22 @@ export const personalSchema = z.object({
   dobDay:      z.string().min(1, "Required"),
   dobYear:     z.string().min(4, "Required"),
   hobbies:     z.string().min(2, "Required"),
+  ref_number:     z.string().optional(),
 });
 
 export const educationRowSchema = z.object({
-  institution: z.string().optional(),
-  location:    z.string().optional(),
-  dateFrom:    z.string().optional(),
-  dateTo:      z.string().optional(),
-  certificate: z.string().optional(),
+  institution: z.string().min(5, "Required"),
+  location:    z.string().min(5, "Required"),
+  dateFrom:    z.string().min(1, "Required"),
+  dateTo:      z.string().min(1, "Required"),
+  certificate: z.string().min(1, "Required"),
 });
 
 export const sponsorRowSchema = z.object({
-  name:         z.string().optional(),
-  relationship: z.string().optional(),
-  address:      z.string().optional(),
-  phone:        z.string().optional(),
-  email:        z.string().optional(),
+  name:         z.string().min(4, "Required"),
+  relationship: z.string().min(3, "Required"),
+  address:      z.string().min(5, "Required"),
+ phone:       z.string().min(8, "Valid phone required").max(15, "Valid phone required"),  email:        z.string().min(1, "Required"),
 });
 
 export const declarationSchema = z.object({
@@ -55,8 +55,8 @@ export const declarationSchema = z.object({
 export const fullSchema = z.object({
   ...subjectSchema.shape,
   ...personalSchema.shape,
-  education: z.array(educationRowSchema),
-  sponsors: z.array(sponsorRowSchema),
+  education: z.array(educationRowSchema).min(1, "At least one education entry is required").max(5, "Maximum of 5 education entries allowed"),
+  sponsors: z.array(sponsorRowSchema).min(1, "At least one sponsor entry is required").max(3, "Maximum of 3 sponsors allowed"),
   ...declarationSchema.shape,
 });
 

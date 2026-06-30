@@ -34,6 +34,7 @@ model Student{
   lga String
   hobbies String
   ref_number String?
+  paid Boolean? @default(false)
   how_you_found_us String?
   institutes Student_Institutes[]
   sponsors Student_Sponsor[]
