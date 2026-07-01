@@ -161,7 +161,7 @@ export async function storeStudentData2(form:FullForm, ){
         },
         data: {
             paid: true,
-            status: true,
+            status: "complete",
             how_you_found_us: fullData.heardFrom
         }
     });
