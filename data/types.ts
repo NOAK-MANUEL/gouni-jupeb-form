@@ -6,7 +6,7 @@ export interface Student {
   faculty: string;
   subjects: string;
   created_at: Date;
-  status: "complete" |"incomplete"| "failed" | "success"|boolean;
+  status: "complete" |"incomplete"| "failed" | "success"|string;
   paid: boolean;
   gender?: string;
   ref_number: string;

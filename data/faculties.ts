@@ -43,7 +43,7 @@ export const FACULTIES: Record<string, string[]> = {
     "Industrial Physics/Physics with Electronics/Renewable Energy/Geophysics – Physics, Mathematics, Chemistry",
   ],
   
-  "FACAULTY OF COMPUTER INFORMATION TECHNOLOGY":[
+  "FACULTY OF COMPUTER INFORMATION TECHNOLOGY":[
     "Software Engineering – Mathematics, Physics, Chemistry",
     "Cyber Security – Mathematics, Physics, Chemistry",
     "Data Science – Mathematics, Physics, Chemistry",
