@@ -40,9 +40,15 @@ export const FACULTIES: Record<string, string[]> = {
     "Microbiology – Biology, Chemistry, Physics/Mathematics",
     "Biochemistry – Biology, Chemistry, Physics/Mathematics",
     "Industrial Chemistry – Chemistry, Physics, Biology/Mathematics",
-    "Computer Science – Mathematics, Physics, Chemistry",
-    "Mathematics – Mathematics, Physics, Chemistry",
     "Industrial Physics/Physics with Electronics/Renewable Energy/Geophysics – Physics, Mathematics, Chemistry",
+  ],
+  
+  "FACAULTY OF COMPUTER INFORMATION TECHNOLOGY":[
+    "Software Engineering – Mathematics, Physics, Chemistry",
+    "Cyber Security – Mathematics, Physics, Chemistry",
+    "Data Science – Mathematics, Physics, Chemistry",
+    "Mathematics – Mathematics, Physics, Chemistry",
+
   ],
   "COLLEGE OF MEDICINE AND NURSING": [
     "Medicine – Biology, Chemistry, Physics",
