@@ -55,8 +55,8 @@ export const declarationSchema = z.object({
 export const fullSchema = z.object({
   ...subjectSchema.shape,
   ...personalSchema.shape,
-  education: z.array(educationRowSchema).min(1, "At least one education entry is required").max(5, "Maximum of 5 education entries allowed"),
-  sponsors: z.array(sponsorRowSchema).min(1, "At least one sponsor entry is required").max(3, "Maximum of 3 sponsors allowed"),
+  education: z.array(educationRowSchema),
+  sponsors: z.array(sponsorRowSchema),
   ...declarationSchema.shape,
 });
 

@@ -91,13 +91,41 @@ export async function storeStudentData2(form:FullForm, ){
         throw new Error("Failed to verify payment");
     }
     if (!paymentData.data.status || paymentData.data.status !== "success") {
-        throw new Error("No Payment found");
+        const response = await fetch(process.env.REGISTER+`name=${fullData.firstName}&email=${fullData.email}&phone=${fullData.phone}`, { method: "GET" ,})
+        if (!response.ok) {
+            throw new Error("Failed to register student");
+        }
+        let ref_number:string; 
+        const data = await response.json();
+        if (data.success) {
+            ref_number = String(data.data);
+            await prismaClient.student.update({
+                where:{
+                    email: fullData.email
+                },
+                data:{
+                    ref_number
+                }
+            })
+            return { success: false,intent:"payment",link: process.env.PAY+ref_number ,message: "Payment not found, click the button to complete payment" };
+        }else{
+
+            throw new Error("No Payment made");
+        }
     }
     
-   
+    
     
     
     const {sponsors, education} = fullData;
+    if(sponsors.length <1  ){
+        throw new Error("Sponsor field can not be less than one");
+
+    }
+    if(education.length <1  ){
+        throw new Error("Education field can not be less than one");
+
+    }
     sponsors.forEach(async (sponsor) => {
         await prismaClient.student_Sponsor.create({
             data: {
@@ -134,6 +162,7 @@ export async function storeStudentData2(form:FullForm, ){
         data: {
             paid: true,
             status: true,
+            how_you_found_us: fullData.heardFrom
         }
     });
     return { success: true, message: "ok" }

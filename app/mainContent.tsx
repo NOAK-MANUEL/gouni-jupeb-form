@@ -74,7 +74,7 @@ const NavRow = ({ onBack, onNext, nextLabel="Continue", nextDisabled=false }: {
 export default function JUPEBAdmissions() {
   const [page, setPage] = useState<"form"|"admin"|"success"|"failed">("form");
   const [step, setStep] = useState<Step>("subjects");
-  const [successData, setSuccessData] = useState<{ name:string; id:string,intent?:string, message?:string } | null>(null);
+  const [successData, setSuccessData] = useState<{ name:string; id:string,intent?:string, message?:string ,link?:string} | null>(null);
   const [paid,setPaid] = useState(false)
   const [loading, setLoading] = useState(false);
 
@@ -164,14 +164,13 @@ export default function JUPEBAdmissions() {
     const s = saveStudent(data);
     
      storeStudentData2(data).then((res)=>{
-      console.log(res);
       
     if(!res.success){
       s.intent = res.intent
       s.message = res.message
       s.status = "failed"
     }    
-    setSuccessData({ name: data.firstName, id: s.id, intent: s.intent, message: s.message });
+    setSuccessData({ name: data.firstName, id: s.id, intent: s.intent, message: s.message,link:res?.link });
     setPage(s.status as "success"|"failed");
   })
   };
@@ -180,7 +179,7 @@ export default function JUPEBAdmissions() {
     <SuccessScreen name={successData.name}  onNew={() => { setPage("form"); setStep("subjects"); }} />
   );
   if (page === "failed" && successData) return (
-    <FailedScreen name={successData.name} intent={successData.intent||"custom"} message={successData.message||"something went wrong"} onClick={() => { setPage("form"); setStep("subjects"); }} />
+    <FailedScreen  intent={successData.intent||"custom"} message={successData.message||"something went wrong"} onClick={successData.link?()=>navigate.push(successData.link!):() => { setPage("form"); setStep("subjects"); }} />
   );
 
   return (

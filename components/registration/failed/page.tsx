@@ -1,6 +1,6 @@
 import { C } from "@/data/colors";
 
-export const FailedScreen = ({ name, message,intent, onClick }: { name:string; message:string; intent:string; onClick:()=>void }) => (
+export const FailedScreen = ({  message,intent, onClick, }: {  message:string; intent:string; onClick:()=>void, }) => (
   <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", padding:"24px", fontFamily:"'DM Sans', sans-serif" }}>
     <div style={{ background:"white", border:`1px solid ${C.border}`, borderRadius:"16px", maxWidth:"460px", width:"100%", padding:"48px 40px", textAlign:"center" }}>
       <div style={{ width:"72px", height:"72px", borderRadius:"50%", background:C.danger, border:`4px solid ${C.danger}`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 24px" }}>

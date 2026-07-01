@@ -36,7 +36,7 @@ model Student{
   created_at DateTime @default(now())
   ref_number String @unique
   paid Boolean @default(false)
-  status Boolean @default(false)
+  status String @default("incomplete")
   how_you_found_us String?
   institutes Student_Institutes[]
   sponsors Student_Sponsor[]
