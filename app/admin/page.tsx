@@ -3,21 +3,31 @@ import { C } from "@/data/colors";
 import { inputBase } from "@/data/inputBase";
 import { Student } from "@/data/types";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getAllStudents } from "../../actions";
+import AddAdmin from "@/components/addAdmin";
 
 export default function AdminDashboard ()  {
+    const [addAdmin, setAddAdmin] = useState(false);
+
+  
   const [students, setStudents] = useState<Student[]>([]);
   const [filter, setFilter] = useState<"all"|"complete"|"incomplete"|"paid"|"unpaid">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Student|null>(null);
   const navigate = useRouter()
 
-
-  const togglePaid = (id: string) => {
-    const _tempStudent = students.map(s => s.id === id ? { ...s, paid:!s.paid, paymentRef: !s.paid ? `PAY-${Date.now()}` : "" } : s);
-    setStudents([..._tempStudent]);
-    if (selected?.id === id) setSelected(_tempStudent.find(s => s.id === id) ?? null);
-  };
+  
+  useEffect(() => {
+    getAllStudents ().then(res => {
+      if (res.success) {
+        setStudents(res.data||[]);
+      } else {
+        console.error("Failed to fetch students:", res.message);
+      }
+    })
+  },[])
+ 
 
   const filtered = students.filter(s => {
     const matchFilter =
@@ -26,7 +36,7 @@ export default function AdminDashboard ()  {
       filter === "incomplete" ? s.status === "incomplete" :
       filter === "paid" ? s.paid :
       !s.paid;
-    const matchSearch = search === "" || s.name.toLowerCase().includes(search.toLowerCase()) || s.email.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = search === "" || s.first_name.concat(s.last_name).toLowerCase().includes(search.toLowerCase()) || s.email.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
 
@@ -63,9 +73,30 @@ export default function AdminDashboard ()  {
 
       <main style={{ maxWidth:"1200px", margin:"0 auto", padding:"32px 24px" }}>
         {/* page heading */}
-        <div style={{ marginBottom:"28px" }}>
+        <div style={{ marginBottom:"28px" }} className="md:flex justify-between items-center">
+          <div>
           <h1 style={{ fontSize:"28px", fontWeight:700, color:C.slate, margin:"0 0 6px", fontFamily:"'DM Serif Display', Georgia, serif" }}>Applicant Management</h1>
           <p style={{ fontSize:"13px", color:C.muted, margin:0 }}>Review, track and manage all JUPEB applicants for the 2024/2025 academic session.</p>
+
+          </div>
+          <div className="flex md:mt-0 mt-4  gap-2">
+              <button
+                onClick={() => setAddAdmin(true)}
+                className={`cursor-pointer bg-lime-800 hover:bg-lime-700 text-white font-bold px-5 py-2.5 rounded-full text-sm transition shadow-md shadow-blue-200 flex items-center gap-1.5`}
+              >
+                <span className="text-base">+</span> Add Admin
+              </button>
+            
+              <button
+                // onClick={async () => {
+                //   await signout();
+                //   navigate.replace("/");
+                // }}
+                className="cursor-pointer border border-red-200 text-red-500 hover:bg-red-50 font-semibold px-5 py-2.5 rounded-full text-sm transition"
+              >
+                Sign Out
+              </button>
+            </div>
         </div>
 
         {/* stat cards */}
@@ -83,6 +114,8 @@ export default function AdminDashboard ()  {
             </div>
           ))}
         </div>
+
+         
 
         <div style={{ display:"flex", gap:"20px", flexWrap:"wrap" }}>
           {/* table panel */}
@@ -109,7 +142,7 @@ export default function AdminDashboard ()  {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"13px" }}>
                 <thead>
                   <tr style={{ background:"#F6FAF8", borderBottom:`1px solid ${C.border}` }}>
-                    {["ID","Applicant","Faculty","Date","Status","Payment","Action"].map(h => (
+                    {["Applicant","Faculty","Date","Status","Payment","Action"].map(h => (
                       <th key={h} style={{ textAlign:"left", padding:"10px 14px", fontSize:"10px", fontWeight:800, letterSpacing:"0.12em", textTransform:"uppercase", color:C.muted, whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
@@ -120,15 +153,15 @@ export default function AdminDashboard ()  {
                   ) : filtered.map((s, i) => (
                     <tr key={s.id} onClick={() => setSelected(s)}
                       style={{ borderBottom:`1px solid ${C.border}`, cursor:"pointer", background: selected?.id === s.id ? C.primaryLt : i % 2 === 0 ? "white" : "#F9FBF9", transition:"background 0.1s" }}>
-                      <td style={{ padding:"10px 14px", color:C.hint, fontSize:"11px", fontWeight:700 }}>{s.id}</td>
+                      {/* <td style={{ padding:"10px 14px", color:C.hint, fontSize:"11px", fontWeight:700 }}>{s.id}</td> */}
                       <td style={{ padding:"10px 14px" }}>
-                        <p style={{ margin:0, fontWeight:600, color:C.slate }}>{s.name}</p>
+                        <p style={{ margin:0, fontWeight:600, color:C.slate }}>{s.first_name} {s.last_name}</p>
                         <p style={{ margin:0, fontSize:"11px", color:C.hint }}>{s.email}</p>
                       </td>
                       <td style={{ padding:"10px 14px", fontSize:"12px", color:C.muted, maxWidth:"160px" }}>
                         <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.faculty.replace("FACULTY OF ","").replace("COLLEGE OF ","")}</span>
                       </td>
-                      <td style={{ padding:"10px 14px", fontSize:"12px", color:C.muted, whiteSpace:"nowrap" }}>{s.submittedAt}</td>
+                      <td style={{ padding:"10px 14px", fontSize:"12px", color:C.muted, whiteSpace:"nowrap" }}>{`${s.created_at.getFullYear()}-${(s.created_at.getMonth() + 1).toString().padStart(2, '0')}-${s.created_at.getDate().toString().padStart(2, '0')}`}</td>
                       <td style={{ padding:"10px 14px" }}>
                         {s.status === "complete"
                           ? badge("Complete","#1A7A45","#D6F0E0")
@@ -141,9 +174,9 @@ export default function AdminDashboard ()  {
                       </td>
                       <td style={{ padding:"10px 14px" }}>
                         <button
-                          onClick={e => { e.stopPropagation(); togglePaid(s.id); }}
-                          style={{ fontSize:"11px", fontWeight:700, padding:"5px 12px", borderRadius:"6px", border:`1.5px solid ${s.paid ? C.border : C.primary}`, background: s.paid ? "white" : C.primaryLt, color: s.paid ? C.muted : C.primary, cursor:"pointer", whiteSpace:"nowrap" }}>
-                          {s.paid ? "Unmark Paid" : "Mark Paid"}
+                          onClick={e => { e.stopPropagation();  }}
+                          style={{ fontSize:"11px", fontWeight:700, padding:"5px 12px", borderRadius:"6px", border:`1.5px solid  ${C.danger}`, background: C.primaryLt, color: s.paid ? C.muted : C.primary, cursor:"pointer", whiteSpace:"nowrap" }}>
+                          { "Delete"}
                         </button>
                       </td>
                     </tr>
@@ -161,30 +194,30 @@ export default function AdminDashboard ()  {
             <div style={{ width:"300px", flexShrink:0, background:"white", border:`1px solid ${C.border}`, borderRadius:"12px", overflow:"hidden", alignSelf:"start" }}>
               <div style={{ background:C.primaryDk, padding:"20px" }}>
                 <div style={{ width:"52px", height:"52px", borderRadius:"50%", background:C.accent, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:"12px" }}>
-                  <span style={{ fontSize:"20px", fontWeight:800, color:C.primaryDk }}>{selected.name.charAt(0)}</span>
+                  <span style={{ fontSize:"20px", fontWeight:800, color:C.primaryDk }}>{selected.first_name.charAt(0)}</span>
                 </div>
-                <p style={{ color:"white", fontWeight:700, fontSize:"16px", margin:"0 0 2px" }}>{selected.name}</p>
+                <p style={{ color:"white", fontWeight:700, fontSize:"16px", margin:"0 0 2px" }}>{selected.first_name} {selected.last_name}</p>
                 <p style={{ color:C.hint, fontSize:"12px", margin:0 }}>{selected.email}</p>
               </div>
               <div style={{ padding:"20px" }}>
                 {[
                   { label:"Applicant ID", value:selected.id },
                   { label:"Faculty", value:selected.faculty.replace("FACULTY OF ","").replace("COLLEGE OF ","") },
-                  { label:"Programme", value:selected.programme },
-                  { label:"Applied On", value:selected.submittedAt },
+                  { label:"subjects", value:selected.subjects },
+                  { label:"Applied On", value: `${selected.created_at.getFullYear()}-${(selected.created_at.getMonth() + 1).toString().padStart(2, '0')}-${selected.created_at.getDate().toString().padStart(2, '0')}` },
                   { label:"Application Status", value:selected.status === "complete" ? "✓ Complete" : "⚠ Incomplete" },
                   { label:"Payment Status", value:selected.paid ? "✓ Paid" : "✗ Pending" },
-                  ...(selected.paymentRef ? [{ label:"Payment Ref", value:selected.paymentRef }] : []),
+                  ...(selected.ref_number ? [{ label:"Payment Ref", value:selected.ref_number }] : []),
                 ].map(({ label, value }) => (
                   <div key={label} style={{ marginBottom:"12px" }}>
                     <p style={{ fontSize:"10px", fontWeight:800, textTransform:"uppercase", letterSpacing:"0.12em", color:C.hint, margin:"0 0 2px" }}>{label}</p>
                     <p style={{ fontSize:"13px", color:C.slate, margin:0, fontWeight:600 }}>{value}</p>
                   </div>
                 ))}
-                <button onClick={() => togglePaid(selected.id)}
+                {/* <button onClick={() => togglePaid(selected.id)}
                   style={{ width:"100%", marginTop:"12px", padding:"11px", borderRadius:"8px", border:"none", background: selected.paid ? "#FBECEC" : C.primary, color: selected.paid ? C.danger : "white", fontWeight:700, fontSize:"13px", cursor:"pointer", letterSpacing:"0.06em" }}>
                   {selected.paid ? "Remove Payment" : "Confirm Payment"}
-                </button>
+                </button> */}
               </div>
             </div>
           ) : (
@@ -195,6 +228,8 @@ export default function AdminDashboard ()  {
           )}
         </div>
       </main>
+              {addAdmin && <AddAdmin close={addAdmin} setClose={setAddAdmin} />}
+
     </div>
   );
 };

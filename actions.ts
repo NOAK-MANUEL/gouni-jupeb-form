@@ -3,23 +3,23 @@
 import { cookies } from "next/headers"
 import { educationRowSchema, FullForm, fullSchema, personalSchema, sponsorRowSchema, subjectSchema } from "./data/schemas"
 import prismaClient from "./prisma"
+import bcrypt from "bcrypt"
 
-async function setCookie(name: string, value: string, path:string) {
+async function setCookie(name: string, value: string, ) {
     (await cookies()).set({
         name: name,
         value: value,
         maxAge: 60 * 60 * 24,
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
-        path: path
     })
 }
 
-async function getCookie(name: string) {
-    const cookieStore = await cookies()
-    const cookieValue = cookieStore.get(name)
-    return cookieValue?.value || null
-}
+// async function getCookie(name: string) {
+//     const cookieStore = await cookies()
+//     const cookieValue = cookieStore.get(name)
+//     return cookieValue?.value || null
+// }
 
 export async function storeStudentData1(form:FullForm){
     try {
@@ -87,36 +87,55 @@ export async function storeStudentData2(form:FullForm, ){
         throw new Error("Failed to verify payment");
     }
     const paymentData = await res.json();
-    console.log(paymentData);
+    if (!paymentData.success) {
+        throw new Error("Failed to verify payment");
+    }
+    if (!paymentData.data.status || paymentData.data.status !== "success") {
+        throw new Error("No Payment found");
+    }
+    
+   
+    
     
     const {sponsors, education} = fullData;
-    // sponsors.forEach(async (sponsor) => {
-    //     await prismaClient.student_Sponsor.create({
-    //         data: {
-    //             sponsor_name: sponsor.name,
-    //             relationship: sponsor.relationship,
-    //             sponsor_address: sponsor.address,
-    //             sponsor_phone: sponsor.phone,
-    //             sponsor_email: sponsor.email,
-    //             student_id:""
-    //         }
-    //     });
-    // })
+    sponsors.forEach(async (sponsor) => {
+        await prismaClient.student_Sponsor.create({
+            data: {
+                sponsor_name: sponsor.name,
+                relationship: sponsor.relationship,
+                sponsor_address: sponsor.address,
+                sponsor_phone: sponsor.phone,
+                sponsor_email: sponsor.email,
+                student_id:""
+            }
+        });
+    })
             
         
-    // education.forEach(async (edu) => {
-    //     await prismaClient.student_Institutes.create({
-    //         data: {     
-    //             school_name: edu.institution,
-    //             certificate: edu.certificate,
-    //             city: edu.location,
-    //             date_from: edu.dateFrom,
-    //             date_to: edu.dateTo,
-    //             student_id:""
+    education.forEach(async (edu) => {
+        await prismaClient.student_Institutes.create({
+            data: {     
+                school_name: edu.institution,
+                certificate: edu.certificate,
+                city: edu.location,
+                date_from: edu.dateFrom,
+                date_to: edu.dateTo,
+                student_id:""
 
-    //         }
-    //     })
-    // })
+            }
+        })
+    })
+
+     await prismaClient.student.update({
+        where: {
+            ref_number: fullData.ref_number,
+            email: fullData.email,
+        },
+        data: {
+            paid: true,
+            status: true,
+        }
+    });
     return { success: true, message: "ok" }
 }
     catch (error) {
@@ -138,3 +157,93 @@ export async function getStudentData(ref_number:string){
         return { success: false, message: error instanceof Error ? error.message : "An error occurred"   }
     }
 }
+
+export async function getAllStudents(){
+    try {
+        const students = await prismaClient.student.findMany()
+        return { success: true, data: students }
+    }catch (error) {
+        return { success: false, message: error instanceof Error ? error.message : "An error occurred"   }
+    }
+}
+
+export const isAdmin = async () => {
+  const data = (await cookies()).get("_a");
+  if (!data) return null;
+  const { username, password, email, date } = JSON.parse(data.value);
+  if (!username || !password || !date) return null;
+  const currentDate = new Date(date).getTime();
+
+  if (!currentDate) {
+    return null;
+  }
+
+  if (Date.now() > currentDate) {
+    return null;
+  }
+  return {
+    username,
+    email,
+  };
+};
+export const logAdmin = async (
+  username: string,
+  password: string,
+) => {
+  try {
+    if (!username || !password) throw new Error("Invalid Felids");
+    const isAdmin = await prismaClient.admin.findFirst({
+      where: {
+        username,
+        onBlock: false,
+      },
+      select: {
+        username: true,
+        password: true,
+        email: true,
+      },
+    });
+    if (!isAdmin) throw new Error("Username or Password Incorrect");
+    const legit = bcrypt.compareSync(password, isAdmin.password);
+    if (!legit) throw new Error("Username or Password Incorrect");
+    const updateAdmin = {
+      ...isAdmin,
+      date: new Date().setDate(new Date().getDate() + 1),
+    };
+    await setCookie("_a", JSON.stringify(updateAdmin), );
+    return {
+      success: true,
+    };
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "An error occurred" };
+  }
+};
+
+export const createAdmin = async (
+  username: string,
+  email: string,
+  password: string,
+) => {
+  try {
+    if (!username || !password || !email) throw new Error("Invalid Input");
+    const hasInfo = await isAdmin();
+    if (!hasInfo) throw new Error("Admin not authorized");
+    const isLegit = await prismaClient.admin.findFirst({
+      where: { ...hasInfo },
+    });
+    if (!isLegit) throw new Error("Admin not authorized");
+
+    await prismaClient.admin.create({
+      data: {
+        username,
+        email,
+        password: bcrypt.hashSync(password, bcrypt.genSaltSync()),
+      },
+    });
+    return {
+      success: true,
+    };
+  } catch (error) {
+    return {success: false, message: error instanceof Error ? error.message : "An error occurred"   }
+  }
+};

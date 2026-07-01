@@ -1,13 +1,19 @@
 export interface Student {
-  id: string;
-  name: string;
+  id:string;
+  last_name: string;
+  first_name: string;
   email: string;
   faculty: string;
-  programme: string;
-  submittedAt: string;
-  status: "complete" |"incomplete"| "failed" | "success";
+  subjects: string;
+  created_at: Date;
+  status: "complete" |"incomplete"| "failed" | "success"|boolean;
   paid: boolean;
-  paymentRef: string;
+  gender?: string;
+  ref_number: string;
+   state_of_origin?: string,
+  city? :string,
+  country?: string,
+  dob?: Date,
   intent?: string;
   message?: string;
 }

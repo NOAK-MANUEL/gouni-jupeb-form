@@ -46,6 +46,6 @@ export const SectionDivider = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const AddBtn =({onAdd, label}: { onAdd: () => void; label: string }) => {
-  return        <button onClick={onAdd} style={{ display:"flex", alignItems:"center", gap:"6px", background:"white", border:`1.5px solid ${C.border}`, borderRadius:"8px", padding:"10px 22px", fontSize:"13px", fontWeight:700, color:C.muted, cursor:"pointer", letterSpacing:"0.08em", textTransform:"uppercase" }}>{label}</button>
+  return        <button onClick={onAdd} style={{margin:"4px", width:"200px", background:"white", border:`1.5px solid ${C.border}`, borderRadius:"8px", padding:"6px", fontSize:"11px", fontWeight:700, color:C.muted, cursor:"pointer", textTransform:"uppercase" }}>{label}</button>
   
 }

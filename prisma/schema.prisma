@@ -33,8 +33,10 @@ model Student{
   dob DateTime
   lga String
   hobbies String
-  ref_number String?
-  paid Boolean? @default(false)
+  created_at DateTime @default(now())
+  ref_number String @unique
+  paid Boolean @default(false)
+  status Boolean @default(false)
   how_you_found_us String?
   institutes Student_Institutes[]
   sponsors Student_Sponsor[]

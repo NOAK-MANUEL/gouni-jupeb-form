@@ -30,7 +30,7 @@ export const personalSchema = z.object({
 });
 
 export const educationRowSchema = z.object({
-  institution: z.string().min(5, "Required"),
+  institution: z.string().min(3, "Required"),
   location:    z.string().min(5, "Required"),
   dateFrom:    z.string().min(1, "Required"),
   dateTo:      z.string().min(1, "Required"),
